@@ -65,7 +65,7 @@ public:
 #define BUTTON_PIN 13;
 
 void println(const char* msg) {
-  if(Serial && ((signed) Serial.availableForWrite()) > strlen(msg)) {
+  if(Serial) {
     Serial.println(msg);
   }
 }
