@@ -1,8 +1,7 @@
 #include <Arduino.h>
-
 #include "Adafruit_TinyUSB.h"
 #include <bluefruit.h>
-
+#include "debounce.h"
 
 #define BUTTONS_REPORT_DESC_GAMEPAD(...)                                       \
   HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                                      \
@@ -15,48 +14,7 @@
 
 const uint8_t HID_REPORT_DESCRIPTOR[] = {BUTTONS_REPORT_DESC_GAMEPAD()};
 
-typedef void (*debounce_callback_t)();
 
-class debounce {
-private:
-  int buttonState = HIGH;
-  int lastInputState = 0;
-  unsigned long consecutiveTime;
-  debounce_callback_t press_handler = nullptr;
-  debounce_callback_t release_handler = nullptr;
-
-public:
-  debounce() {}
-  void update(int pinState) {
-    if (pinState != lastInputState) {
-      lastInputState = pinState;
-      consecutiveTime = millis();
-    }
-    if (consecutiveTime + 50 > millis()) {
-
-      if (buttonState == HIGH && lastInputState == LOW) {
-        if (press_handler) {
-          press_handler();
-        }
-      } else if (buttonState == LOW && lastInputState == HIGH) {
-        if (release_handler) {
-          release_handler();
-        }
-      }
-      buttonState = lastInputState;
-    }
-  }
-
-  void onpress(debounce_callback_t press_handler) {
-    this->press_handler = press_handler;
-  }
-
-  void onrelease(debounce_callback_t release_handler) {
-    this->release_handler = release_handler;
-  }
-
-  bool pressed() { return LOW == buttonState; }
-};
 #define WRITE_MASK 0x0FFFFC3F
 #define BIT6 64
 #define BIT7 128
@@ -66,7 +24,7 @@ public:
 
 void println(const char* msg) {
   if(Serial) {
-    Serial.println(msg);
+    Serial.println(msg); 
   }
 }
 
@@ -177,6 +135,7 @@ void setup() {
   pinMode(PIN_BUTTON1, INPUT_PULLUP);
   button.onrelease(button_release_callback);
   button.onpress(button_press_callback);
+
 }
 
 
