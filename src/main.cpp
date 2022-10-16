@@ -64,6 +64,12 @@ public:
 #define BIT9 512
 #define BUTTON_PIN 13;
 
+void println(const char* msg) {
+  if(Serial && ((signed) Serial.availableForWrite()) > strlen(msg)) {
+    Serial.println(msg);
+  }
+}
+
 BLEClientService scwheel_service("dfd757b2-3779-44c2-b814-150c032ff1a1");
 BLEClientCharacteristic scwheel_buttons("5a0c806c-eb42-48bd-8429-0e62bf93a4a6");
 Adafruit_USBD_HID usb_hid(HID_REPORT_DESCRIPTOR, sizeof(HID_REPORT_DESCRIPTOR),
@@ -71,31 +77,31 @@ Adafruit_USBD_HID usb_hid(HID_REPORT_DESCRIPTOR, sizeof(HID_REPORT_DESCRIPTOR),
 debounce button;
 uint32_t lastButtonState = 0;
 
-void button_release_callback() { Serial.println("Button pressed!"); }
+void button_release_callback() { println("Button pressed!"); }
 
-void button_press_callback() { Serial.println("Button released!"); }
+void button_press_callback() { println("Button released!"); }
 
 void scan_callback(ble_gap_evt_adv_report_t *report) {
   if (report->type.connectable && Bluefruit.Central.connect(report)) {
-    Serial.println("Connect");
+    println("Connect");
   } else {
-    Serial.println("Resume");
+    println("Resume");
     Bluefruit.Scanner.resume();
   }
 }
 
 void connect_callback(uint16_t conn_handle) {
-  Serial.println("connect_callback");
+  println("connect_callback");
 
   if (!scwheel_service.discover(conn_handle) ||
       !Bluefruit.Discovery.discoverCharacteristic(conn_handle, scwheel_buttons)) {
-    Serial.println("Service not found!");
+    println("Service not found!");
     Bluefruit.disconnect(conn_handle);
     return;
   }
 
   if (!scwheel_buttons.enableNotify()) {
-    Serial.println("Failed to enable notifications!");
+    println("Failed to enable notifications!");
     Bluefruit.disconnect(conn_handle);
   }
 }
@@ -137,7 +143,8 @@ void notify_callback(BLEClientCharacteristic *chr, uint8_t *data,
     sendReport(buttonState);
     lastButtonState = buttonState;
   } else {
-    Serial.printf("Invalid data length in ble notification, expected: 4, actual: %d\n", len);
+    
+    //TODO: Serial.printf("Invalid data length in ble notification, expected: 4, actual: %d\n", len);
   }
 }
 
@@ -147,9 +154,8 @@ void setup() {
     delay(1);
 
   Serial.begin(115200);
-  while (!Serial)
-    delay(10); // for nrf52840 with native usb
-  Serial.println("Initialize start");
+
+  println("Initialize start");
 
   Bluefruit.begin(0, 1);
   scwheel_service.begin();
@@ -167,11 +173,13 @@ void setup() {
   Bluefruit.Central.setConnectCallback(connect_callback);
   Bluefruit.Discovery.begin();
   Bluefruit.Scanner.start(0);
-  Serial.println("Scanning ...");
+  println("Scanning ...");
   pinMode(PIN_BUTTON1, INPUT_PULLUP);
   button.onrelease(button_release_callback);
   button.onpress(button_press_callback);
 }
+
+
 
 void loop() { 
   button.update(digitalRead(PIN_BUTTON1)); 
